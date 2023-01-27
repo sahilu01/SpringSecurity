@@ -1,12 +1,19 @@
 package com.personal.project.springbootdockerdemo;
 
 
-import org.apache.kafka.clients.KafkaClient;
-import org.apache.kafka.clients.producer.KafkaProducer;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.toMap;
 
 @RestController
 public class DemoController {
@@ -20,14 +27,16 @@ public class DemoController {
 
   @GetMapping("/hello")
   public String hello(){
-    return "hello world!!!";
+    return "hello!!!!";
   }
-
 
 
   @GetMapping("/publish")
-  public void publish(){
-    kafkaTemplate.send("hello-world","hello","{}");
-  }
+  public String publish(){
 
+    kafkaTemplate.send("hello-world", "hello",
+        "{This message is bring sent at" + LocalDate.now() + "}");
+
+    return "Message Sent";
+  }
 }
