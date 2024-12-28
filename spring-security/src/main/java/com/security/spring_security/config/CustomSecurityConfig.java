@@ -1,5 +1,6 @@
 package com.security.spring_security.config;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -9,8 +10,13 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.provisioning.JdbcUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+
+import javax.sql.DataSource;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
@@ -21,6 +27,12 @@ import static org.springframework.security.config.Customizer.withDefaults;
 @EnableWebSecurity
 @EnableMethodSecurity
 public class CustomSecurityConfig {
+
+  final DataSource dataSource;
+
+  public CustomSecurityConfig(DataSource dataSource) {
+    this.dataSource = dataSource;
+  }
 
   @Bean
   SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
@@ -33,9 +45,25 @@ public class CustomSecurityConfig {
 
   @Bean
   public UserDetailsService userDetailsService() {
-    UserDetails user1 = User.withUsername("user").password("{noop}user").roles("USER").build();
-    UserDetails user2 = User.withUsername("admin").password("{noop}admin").roles("ADMIN").build();
+    UserDetails user1 = User.withUsername("user").password(passwordEncoder().encode("user")).roles("USER").build();
+    UserDetails user2 = User.withUsername("admin").password(passwordEncoder().encode("admin")).roles("ADMIN").build();
 
-    return new InMemoryUserDetailsManager(user1, user2);
+
+    JdbcUserDetailsManager jdbcUserDetailsManager = new JdbcUserDetailsManager(dataSource);
+
+    if (!jdbcUserDetailsManager.userExists(user1.getUsername())) {
+        jdbcUserDetailsManager.createUser(user1);
+    }
+    if (!jdbcUserDetailsManager.userExists(user2.getUsername())) {
+        jdbcUserDetailsManager.createUser(user2);
+    }
+    return jdbcUserDetailsManager;
+    //return new InMemoryUserDetailsManager(user1, user2);
+  }
+
+
+  @Bean
+  public PasswordEncoder passwordEncoder() {
+    return new BCryptPasswordEncoder();
   }
 }
